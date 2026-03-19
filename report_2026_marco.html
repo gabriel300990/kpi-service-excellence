@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPI Report — Service Excellence | Março/2026</title>
+<style>
+  :root {
+    --green: #22c55e; --green-bg: #f0fdf4; --green-border: #bbf7d0;
+    --yellow: #eab308; --yellow-bg: #fefce8; --yellow-border: #fef08a;
+    --red: #ef4444; --red-bg: #fef2f2; --red-border: #fecaca;
+    --gray: #6b7280; --gray-bg: #f9fafb; --gray-border: #e5e7eb;
+    --purple: #820ad1; --purple-light: #f3e8ff;
+    --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --text-secondary: #64748b;
+    --border: #e2e8f0; --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+
+  .header { background: linear-gradient(135deg, var(--purple), #6d28d9); color: #fff; padding: 28px 32px; }
+  .header h1 { font-size: 22px; font-weight: 700; }
+  .header .subtitle { opacity: .85; font-size: 14px; margin-top: 4px; }
+  .summary-row { display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
+  .summary-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.18); border-radius: 20px; padding: 6px 14px; font-size: 14px; font-weight: 600; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .dot-green { background: var(--green); } .dot-yellow { background: var(--yellow); } .dot-red { background: var(--red); }
+
+  .tabs-bar { display: flex; background: var(--card); border-bottom: 2px solid var(--border); padding: 0 24px; overflow-x: auto; position: sticky; top: 0; z-index: 10; }
+  .tab-btn { padding: 14px 20px; font-size: 14px; font-weight: 600; color: var(--text-secondary); background: none; border: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; transition: all .2s; }
+  .tab-btn:hover { color: var(--purple); }
+  .tab-btn.active { color: var(--purple); border-bottom-color: var(--purple); }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+  .tab-panel { display: none; } .tab-panel.active { display: block; }
+
+  .section-title { font-size: 18px; font-weight: 700; margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; }
+  .section-title .icon { font-size: 20px; }
+
+  .kpi-table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--card); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); margin-bottom: 24px; }
+  .kpi-table th { background: var(--gray-bg); padding: 10px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-secondary); font-weight: 700; text-align: left; border-bottom: 2px solid var(--border); }
+  .kpi-table td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .kpi-table tr:last-child td { border-bottom: none; }
+  .kpi-table tr:hover { background: var(--gray-bg); }
+
+  .group-row td { background: var(--purple-light); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--purple); padding: 8px 14px; }
+
+  .status-badge { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-size: 12px; }
+  .status-green { background: var(--green-bg); border: 2px solid var(--green); color: var(--green); }
+  .status-yellow { background: var(--yellow-bg); border: 2px solid var(--yellow); color: var(--yellow); }
+  .status-red { background: var(--red-bg); border: 2px solid var(--red); color: var(--red); }
+  .status-gray { background: var(--gray-bg); border: 2px solid var(--gray-border); color: var(--gray); }
+
+  .progress-cell { min-width: 120px; }
+  .progress-bar { height: 6px; background: var(--gray-border); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width .4s ease; }
+  .progress-fill.green { background: var(--green); } .progress-fill.yellow { background: var(--yellow); } .progress-fill.red { background: var(--red); }
+  .progress-label { font-size: 10px; color: var(--text-secondary); }
+
+  .mom-positive { color: var(--green); font-weight: 600; } .mom-negative { color: var(--red); font-weight: 600; } .mom-neutral { color: var(--gray); }
+
+  .initiatives-card { background: var(--card); border-radius: 12px; padding: 20px 24px; box-shadow: var(--shadow); margin-bottom: 24px; }
+  .initiatives-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .initiative-item { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; line-height: 1.6; }
+  .initiative-item:last-child { border-bottom: none; }
+  .initiative-item strong { color: var(--text); }
+  .initiative-item .arrow { color: var(--purple); font-weight: 700; }
+  .initiative-item .kpi-ref { color: var(--purple); font-style: italic; }
+
+  .attention-card { background: var(--yellow-bg); border: 1px solid var(--yellow-border); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; }
+  .attention-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; color: #92400e; }
+  .attention-item { padding: 4px 0; font-size: 13px; color: #78350f; }
+
+  .overview-card { background: var(--card); border-radius: 12px; padding: 20px 24px; box-shadow: var(--shadow); margin-bottom: 24px; border-left: 4px solid var(--purple); }
+  .overview-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .overview-card p { font-size: 13px; margin: 4px 0; }
+
+  .footer { text-align: center; padding: 24px; color: var(--text-secondary); font-size: 12px; }
+
+  @media (max-width: 768px) {
+    .container { padding: 12px; }
+    .kpi-table { font-size: 12px; }
+    .kpi-table th, .kpi-table td { padding: 8px 10px; }
+    .progress-cell { min-width: 80px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>KPI Report — Service Excellence</h1>
+  <div class="subtitle">Março / 2026</div>
+  <div class="summary-row">
+    <div class="summary-badge"><span class="dot dot-green"></span> 13 On Track</div>
+    <div class="summary-badge"><span class="dot dot-yellow"></span> 22 At Risk</div>
+    <div class="summary-badge"><span class="dot dot-red"></span> 3 Off Track</div>
+  </div>
+</div>
+
+<div class="tabs-bar">
+  <button class="tab-btn active" data-tab="birdie">Service Quality - Birdie <a href="https://docs.google.com/spreadsheets/d/1unzct1Ou-Ci2obMI5xNUACkYwdINBPi9iZJ26nlq_uw/edit#gid=1296496331" target="_blank" style="font-size:11px;color:inherit;opacity:.6;margin-left:4px" title="Abrir no Sheets">&#x2197;</a></button>
+  <button class="tab-btn" data-tab="risks">Risks <a href="https://docs.google.com/spreadsheets/d/1unzct1Ou-Ci2obMI5xNUACkYwdINBPi9iZJ26nlq_uw/edit#gid=1400823585" target="_blank" style="font-size:11px;color:inherit;opacity:.6;margin-left:4px" title="Abrir no Sheets">&#x2197;</a></button>
+  <button class="tab-btn" data-tab="sfo">SFO <a href="https://docs.google.com/spreadsheets/d/1unzct1Ou-Ci2obMI5xNUACkYwdINBPi9iZJ26nlq_uw/edit#gid=1711864543" target="_blank" style="font-size:11px;color:inherit;opacity:.6;margin-left:4px" title="Abrir no Sheets">&#x2197;</a></button>
+  <button class="tab-btn" data-tab="tnps">tNPS Survey <a href="https://docs.google.com/spreadsheets/d/1unzct1Ou-Ci2obMI5xNUACkYwdINBPi9iZJ26nlq_uw/edit#gid=1224092001" target="_blank" style="font-size:11px;color:inherit;opacity:.6;margin-left:4px" title="Abrir no Sheets">&#x2197;</a></button>
+</div>
+
+<div class="container">
+  <div id="birdie" class="tab-panel active">
+        <div class="section-title">Resumo: 5 🟢 | 10 🟡 | 2 🔴 (de 17 KPIs)</div>
+        <table class="kpi-table">
+        <thead><tr>
+            <th style="width:40px">Status</th><th>KPI</th><th>Valor</th>
+            <th>Target Q1</th><th>MoM</th><th>YtD</th><th>Progresso</th>
+        </tr></thead>
+        <tbody><tr class="group-row"><td colspan="7">Global - Adoption</td></tr><tr>
+        <td><span class="status-badge status-green">✓</span></td>
+        <td><strong># Geographies unlocked through data integration</strong></td>
+        <td><strong>3</strong></td>
+        <td>3</td>
+        <td class="mom-positive">+1</td>
+        <td>+2</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">100% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:100%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>Global Birdie Monthly Active Users</strong></td>
+        <td><strong>605</strong></td>
+        <td>930</td>
+        <td class="mom-negative">-32.3%</td>
+        <td>-11.8%</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">65% do target</div>
+            <div class="progress-bar"><div class="progress-fill yellow" style="width:65%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>Outer Loop users</strong></td>
+        <td><strong>44</strong></td>
+        <td>80</td>
+        <td class="mom-positive">+2.3%</td>
+        <td>-2.2%</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">55% do target</div>
+            <div class="progress-bar"><div class="progress-fill red" style="width:55%"></div></div>
+        </div></td>
+    </tr><tr class="group-row"><td colspan="7">Global - Quality</td></tr><tr>
+        <td><span class="status-badge status-green">✓</span></td>
+        <td><strong>% Average prompt accuracy score</strong></td>
+        <td><strong>87.4%</strong></td>
+        <td>87.1%</td>
+        <td class="mom-positive">+0.24pp</td>
+        <td>+0.49pp</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">100% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:100%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>Birdie Sean-Ellis Score</strong></td>
+        <td><strong>-</strong></td>
+        <td>59%</td>
+        <td class="mom-neutral">-</td>
+        <td>-</td>
+        <td><div class="progress-cell"><span class="progress-label">-</span></div></td>
+    </tr><tr class="group-row"><td colspan="7">Global - Stability</td></tr><tr>
+        <td><span class="status-badge status-green">✓</span></td>
+        <td><strong>BR Birdie Latency in working hours (seconds)</strong></td>
+        <td><strong>1.4</strong></td>
+        <td>2</td>
+        <td class="mom-negative">-65.9%</td>
+        <td>-</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">70% do target</div>
+            <div class="progress-bar"><div class="progress-fill yellow" style="width:70%"></div></div>
+        </div></td>
+    </tr><tr class="group-row"><td colspan="7">BR - Evolution</td></tr><tr>
+        <td><span class="status-badge status-green">✓</span></td>
+        <td><strong># Ops BR Squads/Teams launched on Birdie</strong></td>
+        <td><strong>29</strong></td>
+        <td>29</td>
+        <td class="mom-positive">+1</td>
+        <td>+4</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">100% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:100%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-red">✗</span></td>
+        <td><strong># BR Info available on Birdie</strong></td>
+        <td><strong>6</strong></td>
+        <td>7</td>
+        <td class="mom-neutral">0</td>
+        <td>+2</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">86% do target</div>
+            <div class="progress-bar"><div class="progress-fill yellow" style="width:86%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-red">✗</span></td>
+        <td><strong>% BR operational criteria covered (metadata)</strong></td>
+        <td><strong>58%</strong></td>
+        <td>73%</td>
+        <td class="mom-neutral">0pp</td>
+        <td>+58pp</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">79% do target</div>
+            <div class="progress-bar"><div class="progress-fill yellow" style="width:79%"></div></div>
+        </div></td>
+    </tr><tr class="group-row"><td colspan="7">BR - Adoption</td></tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>BR Birdie Active Users</strong></td>
+        <td><strong>583</strong></td>
+        <td>745</td>
+        <td class="mom-negative">-29.8%</td>
+        <td>-11.3%</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">78% do target</div>
+            <div class="progress-bar"><div class="progress-fill yellow" style="width:78%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>Ops BR (GA) users</strong></td>
+        <td><strong>115</strong></td>
+        <td>167</td>
+        <td class="mom-negative">-31.5%</td>
+        <td>-16.1%</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">69% do target</div>
+            <div class="progress-bar"><div class="progress-fill yellow" style="width:69%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>Ops BR (BPOs) users</strong></td>
+        <td><strong>396</strong></td>
+        <td>508</td>
+        <td class="mom-negative">-24.1%</td>
+        <td>+7.6%</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">78% do target</div>
+            <div class="progress-bar"><div class="progress-fill yellow" style="width:78%"></div></div>
+        </div></td>
+    </tr><tr class="group-row"><td colspan="7">CO - Adoption</td></tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>CO Birdie Active Users</strong></td>
+        <td><strong>20</strong></td>
+        <td>185</td>
+        <td class="mom-negative">-63.6%</td>
+        <td>-13.0%</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">11% do target</div>
+            <div class="progress-bar"><div class="progress-fill red" style="width:11%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>Ops CO users</strong></td>
+        <td><strong>6</strong></td>
+        <td>44</td>
+        <td class="mom-negative">-76.0%</td>
+        <td>+20.0%</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">14% do target</div>
+            <div class="progress-bar"><div class="progress-fill red" style="width:14%"></div></div>
+        </div></td>
+    </tr><tr class="group-row"><td colspan="7">CO - Quality</td></tr><tr>
+        <td><span class="status-badge status-green">✓</span></td>
+        <td><strong>% Average prompt accuracy score (CO)</strong></td>
+        <td><strong>85.3%</strong></td>
+        <td>85%</td>
+        <td class="mom-neutral">-</td>
+        <td>-</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">100% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:100%"></div></div>
+        </div></td>
+    </tr><tr class="group-row"><td colspan="7">MX - Adoption</td></tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>MX Birdie Active Users</strong></td>
+        <td><strong>2</strong></td>
+        <td>0</td>
+        <td class="mom-neutral">-</td>
+        <td>-</td>
+        <td><div class="progress-cell"><span class="progress-label">-</span></div></td>
+    </tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>Ops MX users</strong></td>
+        <td><strong>2</strong></td>
+        <td>0</td>
+        <td class="mom-neutral">-</td>
+        <td>-</td>
+        <td><div class="progress-cell"><span class="progress-label">-</span></div></td>
+    </tr></tbody>
+    </table>
+        <div class="initiatives-card">
+        <h3>🔧 Iniciativas do Mes</h3>
+        <div class="initiative-item"><strong>Nova Governança de Ingestão de Metadados — reformulação completa com template obrigatório para cadastro de critérios. Previsão: dados na Birdie em 10/abr (Onda 2) e 22/mai (Onda 3)</strong> <span class="arrow">→</span> <span class="kpi-ref">% BR operational criteria covered (estagnado em 58%)</span></div><div class="initiative-item"><strong>Filtro de Agente e Supervisor disponível para BPOs — funcionalidade entregue permitindo BPOs filtrarem múltiplos agentes simultaneamente na Birdie</strong> <span class="arrow">→</span> <span class="kpi-ref">Outer Loop users</span></div><div class="initiative-item"><strong>Inner Loop Level Up: 12 squads graduadas + 90 planos de ação registrados. Lançamento do Rouxinol — agente de IA para diagnósticos técnicos padronizados</strong> <span class="arrow">→</span> <span class="kpi-ref">Prompt Accuracy Score (+0.24pp MoM)</span></div><div class="initiative-item"><strong>Birdie Latency reduzida de 4.1s para 1.4s em horário comercial — melhoria de infra significativa</strong> <span class="arrow">→</span> <span class="kpi-ref">BR Birdie Latency (-65.9% MoM)</span></div><div class="initiative-item"><strong>29º squad lançado na Birdie — meta Q1 atingida</strong> <span class="arrow">→</span> <span class="kpi-ref"># Ops BR Squads (+1 MoM, +4 YtD)</span></div>
+    </div>
+        <div class="attention-card">
+        <h3>⚠️ Pontos de Atencao</h3>
+        <div class="attention-item">• Queda acentuada de MAU (-32.3% Global, -29.8% BR, -63.6% CO) — possivelmente ligada ao período de transição de governança. Acompanhar retomada com Onda 2 em abril.</div><div class="attention-item">• Metadados e Info BR estagnados — pipeline claro com Ondas 2 e 3 definidas.</div>
+    </div>
+    </div>
+<div id="risks" class="tab-panel">
+        <div class="section-title">Resumo: 3 🟢 | 3 🟡 | 0 🔴 (de 6 KPIs)</div>
+        <table class="kpi-table">
+        <thead><tr>
+            <th style="width:40px">Status</th><th>KPI</th><th>Valor</th>
+            <th>Target Q1</th><th>MoM</th><th>YtD</th><th>Progresso</th>
+        </tr></thead>
+        <tbody><tr class="group-row"><td colspan="7">Risk Exposure Management</td></tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>OsQuery Security Alerts Reduction</strong></td>
+        <td><strong>7,360</strong></td>
+        <td>6,330</td>
+        <td class="mom-negative">-14.2%</td>
+        <td>-12.8%</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">116% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:100%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-green">✓</span></td>
+        <td><strong># Fraud Involvement (BPO Agents)</strong></td>
+        <td><strong>0</strong></td>
+        <td>0</td>
+        <td class="mom-neutral">0</td>
+        <td>0</td>
+        <td><div class="progress-cell"><span class="progress-label">-</span></div></td>
+    </tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>Background - Security Removal Variance</strong></td>
+        <td><strong>-45.5%</strong></td>
+        <td>25%</td>
+        <td class="mom-negative">-142pp</td>
+        <td>-09pp</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">-182% do target</div>
+            <div class="progress-bar"><div class="progress-fill red" style="width:-182%"></div></div>
+        </div></td>
+    </tr><tr class="group-row"><td colspan="7">Governance &amp; Projects</td></tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>% Island Browser Rollout</strong></td>
+        <td><strong>8.3%</strong></td>
+        <td>100%</td>
+        <td class="mom-neutral">0pp</td>
+        <td>+08pp</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">8% do target</div>
+            <div class="progress-bar"><div class="progress-fill red" style="width:8%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-green">✓</span></td>
+        <td><strong>RCSA Action Plan Execution</strong></td>
+        <td><strong>4</strong></td>
+        <td>3</td>
+        <td class="mom-neutral">-</td>
+        <td>+4</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">133% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:100%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-green">✓</span></td>
+        <td><strong>Manuals &amp; Docs Standardization</strong></td>
+        <td><strong>8</strong></td>
+        <td>8</td>
+        <td class="mom-positive">+300%</td>
+        <td>+125%</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">100% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:100%"></div></div>
+        </div></td>
+    </tr></tbody>
+    </table>
+        <div class="initiatives-card">
+        <h3>🔧 Iniciativas do Mes</h3>
+        <div class="initiative-item"><strong>RCSA: 4 ações concluídas (vs target 3 para Q1) — execução adiantada</strong> <span class="arrow">→</span> <span class="kpi-ref">RCSA Action Plan (acima do target)</span></div><div class="initiative-item"><strong>8 manuais revisados de 8 — padronização de documentos BPO Risk concluída (+300% MoM)</strong> <span class="arrow">→</span> <span class="kpi-ref">Manuals &amp; Docs (meta Q1 atingida!)</span></div><div class="initiative-item"><strong>OsQuery: redução de 8.577 para 7.360 alertas (-14.2% MoM) — progresso em compliance de segurança BPO</strong> <span class="arrow">→</span> <span class="kpi-ref">OsQuery Alerts (acima do target 6.330)</span></div>
+    </div>
+        <div class="attention-card">
+        <h3>⚠️ Pontos de Atencao</h3>
+        <div class="attention-item">• Island Browser estagnado em 8.3% — sem avanço MoM, distante do target 100%. Investigar bloqueios no deployment.</div><div class="attention-item">• Bug FleetDM nos BPOs (05/Mar) — ferramenta consumiu banda massiva em prédios de BPO, afetando operações.</div>
+    </div>
+    </div>
+<div id="sfo" class="tab-panel">
+        <div class="section-title">Resumo: 3 🟢 | 3 🟡 | 0 🔴 (de 10 KPIs)</div>
+        <table class="kpi-table">
+        <thead><tr>
+            <th style="width:40px">Status</th><th>KPI</th><th>Valor</th>
+            <th>Target Q1</th><th>MoM</th><th>YtD</th><th>Progresso</th>
+        </tr></thead>
+        <tbody><tr class="group-row"><td colspan="7">Agent Career</td></tr><tr>
+        <td><span class="status-badge status-gray">-</span></td>
+        <td><strong>Jobs Done/Agente (Mês)</strong></td>
+        <td><strong>532</strong></td>
+        <td>-</td>
+        <td class="mom-positive">+13.7%</td>
+        <td>-</td>
+        <td><div class="progress-cell"><span class="progress-label">-</span></div></td>
+    </tr><tr>
+        <td><span class="status-badge status-gray">-</span></td>
+        <td><strong>Jobs Done/Agente (Dia)</strong></td>
+        <td><strong>17</strong></td>
+        <td>-</td>
+        <td class="mom-neutral">0.0%</td>
+        <td>-</td>
+        <td><div class="progress-cell"><span class="progress-label">-</span></div></td>
+    </tr><tr>
+        <td><span class="status-badge status-gray">-</span></td>
+        <td><strong>R$/Jobs Done</strong></td>
+        <td><strong>R$16.2</strong></td>
+        <td>-</td>
+        <td class="mom-neutral">-</td>
+        <td>-</td>
+        <td><div class="progress-cell"><span class="progress-label">-</span></div></td>
+    </tr><tr class="group-row"><td colspan="7">2nd Level</td></tr><tr>
+        <td><span class="status-badge status-green">✓</span></td>
+        <td><strong>[KR] Impacto tNPS Core</strong></td>
+        <td><strong>0.39</strong></td>
+        <td>0.3</td>
+        <td class="mom-positive">+62.5%</td>
+        <td>-</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">130% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:100%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-green">✓</span></td>
+        <td><strong>Qtde agentes N2 Operação</strong></td>
+        <td><strong>279</strong></td>
+        <td>279</td>
+        <td class="mom-positive">+63.2%</td>
+        <td>+149.1%</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">100% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:100%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>tNPS</strong></td>
+        <td><strong>82.8</strong></td>
+        <td>83.5</td>
+        <td class="mom-positive">+0.5%</td>
+        <td>+4.0%</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">99% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:99%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-gray">-</span></td>
+        <td><strong>Resolutividade</strong></td>
+        <td><strong>87.9%</strong></td>
+        <td>-</td>
+        <td class="mom-positive">+0.2pp</td>
+        <td>+0.0pp</td>
+        <td><div class="progress-cell"><span class="progress-label">-</span></div></td>
+    </tr><tr>
+        <td><span class="status-badge status-green">✓</span></td>
+        <td><strong>Recontato</strong></td>
+        <td><strong>9.0%</strong></td>
+        <td>8.6%</td>
+        <td class="mom-positive">+0.3pp</td>
+        <td>+0.3pp</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">105% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:100%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>AIT</strong></td>
+        <td><strong>465</strong></td>
+        <td>409</td>
+        <td class="mom-positive">+6.2%</td>
+        <td>+28.1%</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">114% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:100%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>Skip</strong></td>
+        <td><strong>0.7%</strong></td>
+        <td>0.2%</td>
+        <td class="mom-negative">-1.6pp</td>
+        <td>-0.8pp</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">150% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:100%"></div></div>
+        </div></td>
+    </tr></tbody>
+    </table>
+        <div class="initiatives-card">
+        <h3>🔧 Iniciativas do Mes</h3>
+        <div class="initiative-item"><strong>Rollout N2 concluído: 279 agentes — squads de Central, Chargeback, Nucel e Financing completaram treinamento em 3 BPOs. Meta Q1 batida</strong> <span class="arrow">→</span> <span class="kpi-ref">Qtde agentes N2 (+63.2% MoM, +149.1% YtD)</span></div><div class="initiative-item"><strong>Impacto tNPS Core: 0.39 (vs target 0.3) — 2nd Level superando projeções</strong> <span class="arrow">→</span> <span class="kpi-ref">[KR] Impacto tNPS Core (+62.5% MoM)</span></div><div class="initiative-item"><strong>Novo BPO Challenge lançado — modelo mais justo de medição de performance. Piloto de Bonificação &quot;Operação Caça-Estrelas&quot; iniciado em março</strong> <span class="arrow">→</span> <span class="kpi-ref">tNPS SFO (82.8 vs target 83.5)</span></div>
+    </div>
+        <div class="attention-card">
+        <h3>⚠️ Pontos de Atencao</h3>
+        <div class="attention-item">• AIT crescente (465s, +6.2% MoM) — possível efeito do ramp-up de novos agentes N2. Monitorar maturação.</div><div class="attention-item">• Recontato 9.0% — acima do target 8.6%. Acompanhar estabilização.</div>
+    </div>
+    </div>
+<div id="tnps" class="tab-panel">
+        <div class="section-title">Resumo: 2 🟢 | 6 🟡 | 1 🔴 (de 9 KPIs)</div>
+        <table class="kpi-table">
+        <thead><tr>
+            <th style="width:40px">Status</th><th>KPI</th><th>Valor</th>
+            <th>Target Q1</th><th>MoM</th><th>YtD</th><th>Progresso</th>
+        </tr></thead>
+        <tbody><tr class="group-row"><td colspan="7">Metrics Parity</td></tr><tr>
+        <td><span class="status-badge status-green">✓</span></td>
+        <td><strong>Response Rate BAF</strong></td>
+        <td><strong>15.3%</strong></td>
+        <td>15%</td>
+        <td class="mom-negative">-0.30pp</td>
+        <td>+6.30pp</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">102% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:100%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-green">✓</span></td>
+        <td><strong>tNPS BAF</strong></td>
+        <td><strong>39.8</strong></td>
+        <td>38.2</td>
+        <td class="mom-positive">+7.3%</td>
+        <td>+18%</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">104% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:100%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-red">✗</span></td>
+        <td><strong>tNPS surveys comparability gaps (BAF / Human)</strong></td>
+        <td><strong>4</strong></td>
+        <td>4</td>
+        <td class="mom-neutral">0</td>
+        <td>0</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">100% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:100%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>CAQ Interaction (% of jobs BAF only clicked CAQ)</strong></td>
+        <td><strong>24.5%</strong></td>
+        <td>28%</td>
+        <td class="mom-negative">-0.4pp</td>
+        <td>-0.5pp</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">88% do target</div>
+            <div class="progress-bar"><div class="progress-fill yellow" style="width:88%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>End BAF Chat through CAQ</strong></td>
+        <td><strong>14.0%</strong></td>
+        <td>15%</td>
+        <td class="mom-negative">-0.2pp</td>
+        <td>-0.7pp</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">93% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:93%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>Completion rate BAF</strong></td>
+        <td><strong>14.0%</strong></td>
+        <td>25%</td>
+        <td class="mom-negative">-0.2pp</td>
+        <td>-0.7pp</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">56% do target</div>
+            <div class="progress-bar"><div class="progress-fill red" style="width:56%"></div></div>
+        </div></td>
+    </tr><tr class="group-row"><td colspan="7">Service-journey funnel</td></tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>Dropout</strong></td>
+        <td><strong>4.1%</strong></td>
+        <td>6%</td>
+        <td class="mom-negative">-2.7pp</td>
+        <td>-4.3pp</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">68% do target</div>
+            <div class="progress-bar"><div class="progress-fill yellow" style="width:68%"></div></div>
+        </div></td>
+    </tr><tr class="group-row"><td colspan="7">Survey Deepening</td></tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>Comment Rate</strong></td>
+        <td><strong>9.4%</strong></td>
+        <td>10%</td>
+        <td class="mom-negative">-0.2pp</td>
+        <td>-0.4pp</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">94% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:94%"></div></div>
+        </div></td>
+    </tr><tr>
+        <td><span class="status-badge status-yellow">!</span></td>
+        <td><strong>Actionable Comments</strong></td>
+        <td><strong>77.5%</strong></td>
+        <td>81%</td>
+        <td class="mom-negative">-0.8pp</td>
+        <td>-3.4pp</td>
+        <td><div class="progress-cell">
+            <div class="progress-label">96% do target</div>
+            <div class="progress-bar"><div class="progress-fill green" style="width:96%"></div></div>
+        </div></td>
+    </tr></tbody>
+    </table>
+        <div class="initiatives-card">
+        <h3>🔧 Iniciativas do Mes</h3>
+        <div class="initiative-item"><strong>tNPS BAF atingiu 39.8 — meta de Q2 quase antecipada! Impulsionado por AI Agents (+2-3.4pp uplift) + Scale Down</strong> <span class="arrow">→</span> <span class="kpi-ref">tNPS BAF (+7.3% MoM, +18% YtD)</span></div><div class="initiative-item"><strong>Decisão estratégica: manter Full Scaledown + acelerar AI Agents (ambos aditivos). Ledger Explainer com +20pp uplift</strong> <span class="arrow">→</span> <span class="kpi-ref">tNPS BAF e Impacto tNPS Core</span></div><div class="initiative-item"><strong>Response Rate BAF estável acima da meta. Práticas de RR do BR citadas como referência global por MX e CO</strong> <span class="arrow">→</span> <span class="kpi-ref">Response Rate BAF (15.3% vs target 15%)</span></div><div class="initiative-item"><strong>Iniciativa IA First para Comparabilidade em desenvolvimento — solução E2E entre mar-abr para reduzir gap BAF/Human</strong> <span class="arrow">→</span> <span class="kpi-ref">Comparability Gaps (4 gaps)</span></div><div class="initiative-item"><strong>Dropout melhorou significativamente de 6.8% para 4.1% (-2.7pp MoM)</strong> <span class="arrow">→</span> <span class="kpi-ref">Dropout (abaixo do target 6% pela primeira vez)</span></div>
+    </div>
+        <div class="attention-card">
+        <h3>⚠️ Pontos de Atencao</h3>
+        <div class="attention-item">• Comparability Gaps (4) — sem evolução, mas iniciativa IA E2E em andamento.</div><div class="attention-item">• Actionable Comments em queda (77.5%, -3.4pp YtD vs target 81%) — investigar.</div><div class="attention-item">• CAQ Interaction 24.5% — abaixo do target 28%.</div>
+    </div>
+    </div>
+
+  <div class="overview-card">
+    <h3>Visao Geral do Mes</h3>
+    <p>Março foi marcado por entregas estruturais: governança de metadados Birdie, conclusão do rollout N2 (279 agentes), padronização dos 8 manuais de Risk, e decisão estratégica scaledown + AI agents.</p>
+<p>🚀 Destaque: tNPS BAF em 39.8 — quase a meta de Q2 — e Manuals &amp; Docs 100% concluído.</p>
+<p>⚠️ Atenção: Queda de MAU Birdie e Island Browser estagnado exigem foco em abril.</p>
+  </div>
+</div>
+
+<div class="footer">
+  Fonte: KPI Tracking - Service Excellence (Google Sheets) | Contexto: Slack + Glean<br>
+  Gerado automaticamente em 18/03/2026 17:40
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var btns = document.querySelectorAll('.tab-btn');
+  var panels = document.querySelectorAll('.tab-panel');
+  btns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      btns.forEach(function(b) { b.classList.remove('active'); });
+      panels.forEach(function(p) { p.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+  });
+});
+</script>
+</body>
+</html>
